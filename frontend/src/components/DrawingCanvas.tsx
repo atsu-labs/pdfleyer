@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 
 export type ToolType = 'rect' | 'circle' | 'line' | 'freehand' | 'text' | null;
 
@@ -624,6 +624,68 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [selectedAnnotationId]);
 
+  // Helper to update text annotation attributes
+  const updateTextAttribute = (attributeName: string, value: any) => {
+    setStoredAnnotations(prev => prev.map(ann => {
+      if (ann.id === selectedAnnotationId) {
+        return {
+          ...ann,
+          attributes: { ...ann.attributes, [attributeName]: value },
+          updatedAt: new Date().toISOString(),
+        };
+      }
+      return ann;
+    }));
+  };
+
+  // Get selected text annotation (memoized to ensure proper re-rendering)
+  const selectedTextAnnotation = useMemo(() => {
+    return selectedAnnotationId 
+      ? storedAnnotations.find(ann => ann.id === selectedAnnotationId && ann.type === 'text')
+      : null;
+  }, [selectedAnnotationId, storedAnnotations]);
+
+  // Calculate panel position to avoid overlapping with selected text
+  const textEditorPanelStyle = useMemo(() => {
+    if (!selectedTextAnnotation) return {};
+    
+    const bbox = selectedTextAnnotation.bbox;
+    const panelWidth = 250;
+    const panelHeight = 200; // Approximate height
+    const padding = 10;
+    
+    // Try to position panel to the right of the text
+    let left = bbox.x + bbox.w + padding;
+    let top = bbox.y;
+    
+    // If panel would overflow right, position it to the left
+    if (left + panelWidth > width) {
+      left = Math.max(padding, bbox.x - panelWidth - padding);
+    }
+    
+    // If panel would overflow bottom, adjust top position
+    if (top + panelHeight > height) {
+      top = Math.max(padding, height - panelHeight - padding);
+    }
+    
+    // Ensure panel stays within canvas bounds
+    left = Math.max(padding, Math.min(left, width - panelWidth - padding));
+    top = Math.max(padding, top);
+    
+    return {
+      position: 'absolute' as const,
+      top,
+      left,
+      padding: '16px',
+      backgroundColor: 'white',
+      border: '2px solid #007acc',
+      borderRadius: 8,
+      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+      zIndex: 1000,
+      minWidth: panelWidth,
+    };
+  }, [selectedTextAnnotation, width, height]);
+
   return (
     <div style={{ position: 'relative', display: 'inline-block' }}>
       <canvas
@@ -681,6 +743,82 @@ export const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         >
           削除 (Delete)
         </button>
+      )}
+      
+      {selectedTextAnnotation && (
+        <div
+          data-testid="text-editor-panel"
+          style={textEditorPanelStyle}
+        >
+          <h3 style={{ margin: '0 0 12px 0', fontSize: 14, fontWeight: 'bold', color: '#333' }}>
+            テキスト編集
+          </h3>
+          
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#666' }}>
+              内容:
+            </label>
+            <input
+              data-testid="edit-text-content"
+              type="text"
+              value={selectedTextAnnotation.attributes.text || ''}
+              onChange={(e) => updateTextAttribute('text', e.target.value)}
+              style={{
+                width: '100%',
+                padding: '6px 8px',
+                border: '1px solid #ccc',
+                borderRadius: 4,
+                fontSize: 14,
+              }}
+            />
+          </div>
+          
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#666' }}>
+              フォントサイズ:
+            </label>
+            <input
+              data-testid="edit-font-size"
+              type="number"
+              min="8"
+              max="72"
+              value={selectedTextAnnotation.attributes.fontSize || 16}
+              onChange={(e) => {
+                const newSize = parseInt(e.target.value, 10);
+                if (!isNaN(newSize)) {
+                  updateTextAttribute('fontSize', newSize);
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '6px 8px',
+                border: '1px solid #ccc',
+                borderRadius: 4,
+                fontSize: 14,
+              }}
+            />
+          </div>
+          
+          <div>
+            <label style={{ display: 'block', marginBottom: 4, fontSize: 12, color: '#666' }}>
+              色:
+            </label>
+            <input
+              data-testid="edit-text-color"
+              type="color"
+              value={selectedTextAnnotation.attributes.color || '#FF0000'}
+              onChange={(e) => updateTextAttribute('color', e.target.value)}
+              style={{
+                width: '100%',
+                height: 36,
+                padding: '2px',
+                border: '1px solid #ccc',
+                borderRadius: 4,
+                cursor: 'pointer',
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

@@ -24,8 +24,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = ({ url, page = 1, onLoadSucce
         // Dynamic import of pdfjs-dist
         const pdfjs = await import('pdfjs-dist');
         
-        // Set worker source to the file in public directory
-        (pdfjs as any).GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+        // Set worker source - use unpkg to match installed version
+        (pdfjs as any).GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
 
         const loadingTask = (pdfjs as any).getDocument(url);
         const pdf = await loadingTask.promise;

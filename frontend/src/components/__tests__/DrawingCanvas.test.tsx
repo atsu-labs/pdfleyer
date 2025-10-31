@@ -224,4 +224,172 @@ describe('DrawingCanvas - Selection, Move, Resize, Delete', () => {
       // Should not crash
     });
   });
+
+  describe('Text Attribute Editing', () => {
+    it('should show text editor panel when text annotation is selected', () => {
+      const { rerender } = render(
+        <DrawingCanvas {...defaultProps} selectedTool="text" />
+      );
+      
+      const canvas = screen.getByTestId('drawing-canvas') as HTMLCanvasElement;
+      
+      // Create a text annotation
+      fireEvent.click(canvas, { clientX: 100, clientY: 100 });
+      
+      const textInput = screen.getByTestId('text-input');
+      fireEvent.change(textInput, { target: { value: 'Test Text' } });
+      fireEvent.keyDown(textInput, { key: 'Enter' });
+      
+      // Switch to selection mode
+      rerender(<DrawingCanvas {...defaultProps} selectedTool={null} />);
+      
+      // Select the text annotation (mouseDown within the bounding box)
+      fireEvent.mouseDown(canvas, { clientX: 150, clientY: 110 });
+      
+      // Text editor panel should appear
+      const textEditor = screen.getByTestId('text-editor-panel');
+      expect(textEditor).toBeInTheDocument();
+    });
+
+    it('should allow editing text content', () => {
+      const { rerender } = render(
+        <DrawingCanvas {...defaultProps} selectedTool="text" />
+      );
+      
+      const canvas = screen.getByTestId('drawing-canvas') as HTMLCanvasElement;
+      
+      // Create a text annotation
+      fireEvent.click(canvas, { clientX: 100, clientY: 100 });
+      
+      const textInput = screen.getByTestId('text-input');
+      fireEvent.change(textInput, { target: { value: 'Original Text' } });
+      fireEvent.keyDown(textInput, { key: 'Enter' });
+      
+      // Switch to selection mode
+      rerender(<DrawingCanvas {...defaultProps} selectedTool={null} />);
+      
+      // Select the text annotation (mouseDown within the bounding box)
+      fireEvent.mouseDown(canvas, { clientX: 150, clientY: 110 });
+      
+      // Edit the text content
+      const editTextInput = screen.getByTestId('edit-text-content');
+      expect(editTextInput).toHaveValue('Original Text');
+      
+      fireEvent.change(editTextInput, { target: { value: 'Updated Text' } });
+      expect(editTextInput).toHaveValue('Updated Text');
+    });
+
+    it('should allow changing font size', () => {
+      const { rerender } = render(
+        <DrawingCanvas {...defaultProps} selectedTool="text" />
+      );
+      
+      const canvas = screen.getByTestId('drawing-canvas') as HTMLCanvasElement;
+      
+      // Create a text annotation
+      fireEvent.click(canvas, { clientX: 100, clientY: 100 });
+      
+      const textInput = screen.getByTestId('text-input');
+      fireEvent.change(textInput, { target: { value: 'Test Text' } });
+      fireEvent.keyDown(textInput, { key: 'Enter' });
+      
+      // Switch to selection mode
+      rerender(<DrawingCanvas {...defaultProps} selectedTool={null} />);
+      
+      // Select the text annotation (mouseDown within the bounding box)
+      fireEvent.mouseDown(canvas, { clientX: 150, clientY: 110 });
+      
+      // Change font size
+      const fontSizeInput = screen.getByTestId('edit-font-size');
+      expect(fontSizeInput).toHaveValue(16); // Default font size
+      
+      fireEvent.change(fontSizeInput, { target: { value: '24' } });
+      expect(fontSizeInput).toHaveValue(24);
+    });
+
+    it('should allow changing text color', () => {
+      const { rerender } = render(
+        <DrawingCanvas {...defaultProps} selectedTool="text" />
+      );
+      
+      const canvas = screen.getByTestId('drawing-canvas') as HTMLCanvasElement;
+      
+      // Create a text annotation
+      fireEvent.click(canvas, { clientX: 100, clientY: 100 });
+      
+      const textInput = screen.getByTestId('text-input');
+      fireEvent.change(textInput, { target: { value: 'Test Text' } });
+      fireEvent.keyDown(textInput, { key: 'Enter' });
+      
+      // Switch to selection mode
+      rerender(<DrawingCanvas {...defaultProps} selectedTool={null} />);
+      
+      // Select the text annotation (mouseDown within the bounding box)
+      fireEvent.mouseDown(canvas, { clientX: 150, clientY: 110 });
+      
+      // Change color
+      const colorInput = screen.getByTestId('edit-text-color');
+      expect(colorInput).toHaveValue('#ff0000'); // Default red color (lowercase)
+      
+      fireEvent.change(colorInput, { target: { value: '#0000FF' } });
+      expect(colorInput).toHaveValue('#0000ff'); // Lowercase
+    });
+
+    it('should not show text editor panel for non-text annotations', () => {
+      const { rerender } = render(
+        <DrawingCanvas {...defaultProps} selectedTool="rect" />
+      );
+      
+      const canvas = screen.getByTestId('drawing-canvas') as HTMLCanvasElement;
+      
+      // Draw a rectangle
+      fireEvent.mouseDown(canvas, { clientX: 100, clientY: 100 });
+      fireEvent.mouseUp(canvas, { clientX: 200, clientY: 200 });
+      
+      // Switch to selection mode
+      rerender(<DrawingCanvas {...defaultProps} selectedTool={null} />);
+      
+      // Select the rectangle
+      fireEvent.click(canvas, { clientX: 150, clientY: 150 });
+      
+      // Text editor panel should not appear
+      const textEditor = screen.queryByTestId('text-editor-panel');
+      expect(textEditor).not.toBeInTheDocument();
+    });
+
+    it('should update text annotation properties in real-time', () => {
+      const { rerender } = render(
+        <DrawingCanvas {...defaultProps} selectedTool="text" />
+      );
+      
+      const canvas = screen.getByTestId('drawing-canvas') as HTMLCanvasElement;
+      
+      // Create a text annotation
+      fireEvent.click(canvas, { clientX: 100, clientY: 100 });
+      
+      const textInput = screen.getByTestId('text-input');
+      fireEvent.change(textInput, { target: { value: 'Test' } });
+      fireEvent.keyDown(textInput, { key: 'Enter' });
+      
+      // Switch to selection mode
+      rerender(<DrawingCanvas {...defaultProps} selectedTool={null} />);
+      
+      // Select the text annotation (mouseDown within the bounding box)
+      fireEvent.mouseDown(canvas, { clientX: 150, clientY: 110 });
+      
+      // Change multiple attributes
+      const editTextInput = screen.getByTestId('edit-text-content');
+      const fontSizeInput = screen.getByTestId('edit-font-size');
+      const colorInput = screen.getByTestId('edit-text-color');
+      
+      fireEvent.change(editTextInput, { target: { value: 'Updated' } });
+      fireEvent.change(fontSizeInput, { target: { value: '20' } });
+      fireEvent.change(colorInput, { target: { value: '#00FF00' } });
+      
+      // All changes should be reflected
+      expect(editTextInput).toHaveValue('Updated');
+      expect(fontSizeInput).toHaveValue(20);
+      expect(colorInput).toHaveValue('#00ff00'); // Lowercase
+    });
+  });
 });
